@@ -1,0 +1,58 @@
+name: Auto Release
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # Run every 6 hours
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  check-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Get latest npm version
+        id: npm-version
+        run: |
+          LATEST_VERSION=$(npm show @anthropic-ai/claude-code version)
+          echo "latest=$LATEST_VERSION" >> $GITHUB_OUTPUT
+          echo "Latest npm version: $LATEST_VERSION"
+
+      - name: Check if release exists
+        id: check-release
+        run: |
+          RELEASE_TAG="v${{ steps.npm-version.outputs.latest }}"
+          echo "Checking for release tag: $RELEASE_TAG"
+          
+          # Check if release exists
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release $RELEASE_TAG already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Release $RELEASE_TAG does not exist"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create release
+        if: steps.check-release.outputs.exists == 'false'
+        run: |
+          RELEASE_TAG="v${{ steps.npm-version.outputs.latest }}"
+          echo "Creating release: $RELEASE_TAG"
+          
+          gh release create "$RELEASE_TAG" \
+            --title "Release $RELEASE_TAG" \
+            --notes "Automated release for @anthropic-ai/claude-code version ${{ steps.npm-version.outputs.latest }}" \
+            --latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
