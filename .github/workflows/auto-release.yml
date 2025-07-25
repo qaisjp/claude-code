@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,7 +32,7 @@ jobs:
         run: |
           RELEASE_TAG="v${{ steps.npm-version.outputs.latest }}"
           echo "Checking for release tag: $RELEASE_TAG"
-          
+
           # Check if release exists
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
@@ -49,10 +49,12 @@ jobs:
         run: |
           RELEASE_TAG="v${{ steps.npm-version.outputs.latest }}"
           echo "Creating release: $RELEASE_TAG"
-          
+
           gh release create "$RELEASE_TAG" \
-            --title "Release $RELEASE_TAG" \
-            --notes "Automated release for @anthropic-ai/claude-code version ${{ steps.npm-version.outputs.latest }}" \
+            --title "Anthropic just released $RELEASE_TAG!" \
+            --notes "Version: ${{ steps.npm-version.outputs.latest }}
+          Release notes: https://docs.anthropic.com/en/release-notes/claude-code
+          Changelog: https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md" \
             --latest
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
